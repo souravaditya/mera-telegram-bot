@@ -64,7 +64,7 @@ def check_fixed_reply(text: str):
 def get_ai_reply(user_message: str, user_name: str) -> str:
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.3-70b-versatile",
             max_tokens=300,
             messages=[
                 {"role": "system", "content": AI_SYSTEM_PROMPT},
