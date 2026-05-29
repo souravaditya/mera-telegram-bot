@@ -1,35 +1,33 @@
 import os
 import logging
-import anthropic
+from groq import Groq
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
 
-TELEGRAM_TOKEN    = os.environ.get("TELEGRAM_TOKEN", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-OWNER_CHAT_ID     = os.environ.get("OWNER_CHAT_ID", "")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
+GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "")
 
 FIXED_REPLIES = {
-    "rate":           "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
-    "price":          "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
-    "fee":            "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
-    "available":      "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein.",
-    "free":           "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein: +91-8521460129",
-    "when":           "Main jaldi hi wapis aaunga, tab baat karenge!",
-    "kab":            "Main 1-2 ghante mein wapis aaunga, tab baat karenge!",
-    "hello":          "Hi, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hi":             "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hii":            "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hey":            "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "sona":           "Boliye sona....",
-    "kya kr rhe":     "Me abhi kuchh kam me busy hu, lekin koi baat nahi aap message kr dijiye, me online aaunga tb jwab de dunga 😊",
-    "contact":        "Aap mujhe in tareekon se contact kar sakte hain:\n📞 Call: +91-8521460129\n📧 Email: souravaditya143@email.com",
-    "location":       "Hamara address: Village - BINJHA, District - Deoghar, Jharkhand",
-    "address":        "Hamara address: Village - BINJHA, DEOGHAR, JHARKHAND",
-    "help":           "Main abhi online nahi hoon. Aap apna sawaal bta dijiye, main wapis aate hi reply karunga! 😊",
+    "rate":        "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
+    "price":       "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
+    "fee":         "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
+    "available":   "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein.",
+    "free":        "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein: +91-8521460129",
+    "when":        "Main jaldi hi wapis aaunga, tab baat karenge!",
+    "kab":         "Main 1-2 ghante mein wapis aaunga, tab baat karenge!",
+    "hello":       "Hi, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
+    "hi":          "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
+    "hii":         "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
+    "hey":         "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
+    "sona":        "Boliye sona....",
+    "kya kr rhe":  "Me abhi kuchh kam me busy hu, lekin koi baat nahi aap message kr dijiye, me online aaunga tb jwab de dunga 😊",
+    "contact":     "Aap mujhe in tareekon se contact kar sakte hain:\n📞 Call: +91-8521460129\n📧 Email: souravaditya143@email.com",
+    "location":    "Hamara address: Village - BINJHA, District - Deoghar, Jharkhand",
+    "address":     "Hamara address: Village - BINJHA, DEOGHAR, JHARKHAND",
+    "help":        "Main abhi online nahi hoon. Aap apna sawaal bta dijiye, main wapis aate hi reply karunga! 😊",
 }
 
-AI_SYSTEM_PROMPT = """
-Tum Sourav Aditya ke personal Telegram bot ho.
+AI_SYSTEM_PROMPT = """Tum Sourav Aditya ke personal Telegram bot ho.
 
 Sourav Aditya ke baare mein:
 - Profession: Freelance Developer, Accountant, Data Analyst, Finance Advisor, Life Coach and all other online services.
@@ -44,8 +42,7 @@ Tumhara kaam:
 - Hindi aur English dono mein jawab de sako toh behtar hai
 - Short aur clear replies do — zyada lamba mat karo
 
-Important: Tum sirf ek auto-reply bot ho. Koi commitment mat karo fees ya deadlines ke baare mein.
-"""
+Important: Tum sirf ek auto-reply bot ho. Koi commitment mat karo fees ya deadlines ke baare mein."""
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -53,7 +50,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+client = Groq(api_key=GROQ_API_KEY)
 
 
 def check_fixed_reply(text: str):
@@ -66,15 +63,17 @@ def check_fixed_reply(text: str):
 
 def get_ai_reply(user_message: str, user_name: str) -> str:
     try:
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
             max_tokens=300,
-            system=AI_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": f"{user_name} ka message: {user_message}"}]
+            messages=[
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": f"{user_name} ka message: {user_message}"}
+            ]
         )
-        return response.content[0].text
+        return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Claude API error: {e}")
+        logger.error(f"Groq API error: {e}")
         return "Abhi thodi takleef ho rahi hai. Kripya seedha message karein. 🙏"
 
 
@@ -83,21 +82,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or ""
     user_name = user.first_name or "Dost"
     logger.info(f"Message from {user_name}: {text}")
-
     reply = check_fixed_reply(text) or get_ai_reply(text, user_name)
     await update.message.reply_text(reply)
-
-    if OWNER_CHAT_ID:
-        try:
-            notif = (
-                f"📩 *Naya Message*\n"
-                f"👤 {user_name} (@{user.username or 'N/A'})\n"
-                f"💬 {text[:100]}\n"
-                f"🤖 Bot reply: {reply[:100]}"
-            )
-            await context.bot.send_message(chat_id=OWNER_CHAT_ID, text=notif, parse_mode="Markdown")
-        except Exception as e:
-            logger.error(f"Notification error: {e}")
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -116,3 +102,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
