@@ -8,11 +8,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "")
 
 FIXED_REPLIES = {
-    "rate":        "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
-    "price":       "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
-    "fee":         "Meri rate list ke liye please WhatsApp karein: +91-8521460129",
     "available":   "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein.",
-    "free":        "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein: +91-8521460129",
     "when":        "Main jaldi hi wapis aaunga, tab baat karenge!",
     "kab":         "Main 1-2 ghante mein wapis aaunga, tab baat karenge!",
     "hello":       "Hi, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
@@ -21,7 +17,7 @@ FIXED_REPLIES = {
     "hey":         "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
     "sona":        "Boliye sona....",
     "kya kr rhe":  "Me abhi kuchh kam me busy hu, lekin koi baat nahi aap message kr dijiye, me online aaunga tb jwab de dunga 😊",
-    "contact":     "Aap mujhe in tareekon se contact kar sakte hain:\n📞 Call: +91-8521460129\n📧 Email: souravaditya143@email.com",
+    "contact":     "Aap mujhe in tareekon se contact kar sakte hain:\n📧 Email: souravaditya143@email.com",
     "location":    "Hamara address: Village - BINJHA, District - Deoghar, Jharkhand",
     "address":     "Hamara address: Village - BINJHA, DEOGHAR, JHARKHAND",
     "help":        "Main abhi online nahi hoon. Aap apna sawaal bta dijiye, main wapis aate hi reply karunga! 😊",
@@ -32,13 +28,13 @@ AI_SYSTEM_PROMPT = """Tum Sourav Aditya ke personal Telegram bot ho.
 Sourav Aditya ke baare mein:
 - Profession: Freelance Developer, Accountant, Data Analyst, Finance Advisor, Life Coach and all other online services.
 - Speciality: AI Prompt Engineering, Data Analyst, Computer Operator.
-- Contact: Phone no. +91-8521460129, Email ID - souravaditya143@email.com
+- Contact: telegram - t.me/aditya_sourav, @aditya_sourav, Email ID - souravaditya143@email.com
 - Working hours: Subah 10 baje se Shaam 7 baje tak.
 
 Tumhara kaam:
 - Log jo bhi poochhen, unhe helpful jawab dena
-- Polite aur friendly rehna
-- Agar kuch nahi pata, toh kehna ki "Sourav jaldi wapis aayenge aur jawab denge"
+- Polite aur friendly rehna, agar koi funny baat Karen to funny jawab bhi de skte ho
+- Agar kuch nahi pata, toh kehna ki " Iska jwab mujhe nhi pata hai, Sourav se puch lijiye vahi bta payenge" or telegram I'D de dijiyega @aditya_sourav
 - Hindi aur English dono mein jawab de sako toh behtar hai
 - Short aur clear replies do — zyada lamba mat karo
 
@@ -84,7 +80,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Message from {user_name}: {text}")
     reply = check_fixed_reply(text) or get_ai_reply(text, user_name)
     await update.message.reply_text(reply)
-
+if OWNER_CHAT_ID:
+        try:
+            notif = (
+                f"📩 *Naya Message*\n"
+                f"👤 {user_name} (@{user.username or 'N/A'})\n"
+                f"💬 {text[:100]}\n"
+                f"🤖 Bot reply: {reply[:100]}"
+            )
+            await context.bot.send_message(
+                chat_id=OWNER_CHAT_ID,
+                text=notif,
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Notification error: {e}")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
