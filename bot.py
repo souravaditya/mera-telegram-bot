@@ -6,6 +6,7 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, fil
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "")
+OWNER_CHAT_ID  = os.environ.get("OWNER_CHAT_ID", "")
 
 FIXED_REPLIES = {
     "available":   "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein.",
@@ -34,7 +35,7 @@ Sourav Aditya ke baare mein:
 Tumhara kaam:
 - Log jo bhi poochhen, unhe helpful jawab dena
 - Polite aur friendly rehna, agar koi funny baat Karen to funny jawab bhi de skte ho
-- Agar kuch nahi pata, toh kehna ki " Iska jwab mujhe nhi pata hai, Sourav se puch lijiye vahi bta payenge" or telegram I'D de dijiyega @aditya_sourav
+- Agar kuch nahi pata, toh kehna ki "Iska jwab mujhe nhi pata hai, Sourav se puch lijiye vahi bta payenge" or telegram ID de dijiyega @aditya_sourav
 - Hindi aur English dono mein jawab de sako toh behtar hai
 - Short aur clear replies do — zyada lamba mat karo
 
@@ -80,7 +81,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Message from {user_name}: {text}")
     reply = check_fixed_reply(text) or get_ai_reply(text, user_name)
     await update.message.reply_text(reply)
-if OWNER_CHAT_ID:
+
+    if OWNER_CHAT_ID:
         try:
             notif = (
                 f"📩 *Naya Message*\n"
@@ -95,6 +97,7 @@ if OWNER_CHAT_ID:
             )
         except Exception as e:
             logger.error(f"Notification error: {e}")
+
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -112,4 +115,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+            
