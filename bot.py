@@ -8,38 +8,36 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "")
 OWNER_CHAT_ID  = os.environ.get("OWNER_CHAT_ID", "")
 
-FIXED_REPLIES = {
-    "available":   "Main abhi busy hoon, jaldi wapis aaunga. Urgent ho toh call karein.",
-    "when":        "Main jaldi hi wapis aaunga, tab baat karenge!",
-    "kab":         "Main 1-2 ghante mein wapis aaunga, tab baat karenge!",
-    "hello":       "Hi, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hi":          "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hii":         "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "hey":         "Hello, Main abhi online nahi hoon. Agar kuchh puchhna he to puchiye mere assistant jwab de denge. Ya fir jb me online aaunga tb jwab de dunga.",
-    "sona":        "Boliye sona....",
-    "kya kr rhe":  "Me abhi kuchh kam me busy hu, lekin koi baat nahi aap message kr dijiye, me online aaunga tb jwab de dunga 😊",
-    "contact":     "Aap mujhe in tareekon se contact kar sakte hain:\n📧 Email: souravaditya143@email.com",
-    "location":    "Hamara address: Village - BINJHA, District - Deoghar, Jharkhand",
-    "address":     "Hamara address: Village - BINJHA, DEOGHAR, JHARKHAND",
-    "help":        "Main abhi online nahi hoon. Aap apna sawaal bta dijiye, main wapis aate hi reply karunga! 😊",
-}
-
-AI_SYSTEM_PROMPT = """Tum Sourav Aditya ke personal Telegram bot ho.
+AI_SYSTEM_PROMPT = """Tum Sourav Aditya ke personal Telegram bot ho. Tumhara naam "Aditya Bot" hai.
 
 Sourav Aditya ke baare mein:
 - Profession: Freelance Developer, Accountant, Data Analyst, Finance Advisor, Life Coach and all other online services.
 - Speciality: AI Prompt Engineering, Data Analyst, Computer Operator.
-- Contact: telegram - t.me/aditya_sourav, @aditya_sourav, Email ID - souravaditya143@email.com
+- Telegram: @aditya_sourav
+- Email: souravaditya143@email.com
 - Working hours: Subah 10 baje se Shaam 7 baje tak.
+- Location: Village - BINJHA, District - Deoghar, Jharkhand
 
-Tumhara kaam:
-- Log jo bhi poochhen, unhe helpful jawab dena
-- Polite aur friendly rehna, agar koi funny baat Karen to funny jawab bhi de skte ho
-- Agar kuch nahi pata, toh kehna ki "Iska jwab mujhe nhi pata hai, Sourav se puch lijiye vahi bta payenge" or telegram ID de dijiyega @aditya_sourav
-- Hindi aur English dono mein jawab de sako toh behtar hai
-- Short aur clear replies do — zyada lamba mat karo
+Tumhara behavior:
+- Dost jaisa baat karo — casual, warm aur friendly
+- Funny sawal pe funny jawab do, masti karo!
+- Serious sawal pe helpful aur clear jawab do
+- Hindi aur English dono mein baat kar sakte ho
+- Short replies do — zyada lamba mat likho
+- Agar kuch nahi pata to kaho "Yeh toh Sourav hi bata payenge, unse puchho: @aditya_sourav"
 
-Important: Tum sirf ek auto-reply bot ho. Koi commitment mat karo fees ya deadlines ke baare mein."""
+IMPORTANT — Agar koi yeh kaho:
+- "Sourav ko online aao bolo"
+- "Sourav ko message karo"  
+- "Bolo Sourav online aaye"
+- "Sourav se baat karni hai"
+- "Owner ko bulao"
+- Ya koi bhi aisa message jisme lagta ho ki user Sourav se directly baat karna chahta hai
+
+Toh reply mein likho: "Theek hai, main Sourav ko abhi notify kar deta hoon! 📲"
+Aur saath mein [NOTIFY_OWNER] tag zaroor likho — yeh bahut zaroori hai.
+
+Important: Tum sirf ek auto-reply bot ho. Fees ya deadlines ke baare mein koi commitment mat karo."""
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -48,14 +46,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 client = Groq(api_key=GROQ_API_KEY)
-
-
-def check_fixed_reply(text: str):
-    text_lower = text.lower()
-    for keyword, reply in FIXED_REPLIES.items():
-        if keyword in text_lower:
-            return reply
-    return None
 
 
 def get_ai_reply(user_message: str, user_name: str) -> str:
@@ -71,7 +61,7 @@ def get_ai_reply(user_message: str, user_name: str) -> str:
         return response.choices[0].message.content
     except Exception as e:
         logger.error(f"Groq API error: {e}")
-        return "Abhi thodi takleef ho rahi hai. Kripya seedha message karein. 🙏"
+        return "Abhi thodi takleef ho rahi hai. Kripya seedha message karein: @aditya_sourav 🙏"
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,17 +69,33 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or ""
     user_name = user.first_name or "Dost"
     logger.info(f"Message from {user_name}: {text}")
-    reply = check_fixed_reply(text) or get_ai_reply(text, user_name)
-    await update.message.reply_text(reply)
 
+    reply = get_ai_reply(text, user_name)
+
+    # [NOTIFY_OWNER] tag check karo
+    notify_owner = "[NOTIFY_OWNER]" in reply
+    clean_reply = reply.replace("[NOTIFY_OWNER]", "").strip()
+
+    await update.message.reply_text(clean_reply)
+
+    # Owner ko notification bhejo
     if OWNER_CHAT_ID:
         try:
-            notif = (
-                f"📩 *Naya Message*\n"
-                f"👤 {user_name} (@{user.username or 'N/A'})\n"
-                f"💬 {text[:100]}\n"
-                f"🤖 Bot reply: {reply[:100]}"
-            )
+            if notify_owner:
+                # Special urgent notification
+                notif = (
+                    f"🚨 *{user_name} aapko online aane ko bol raha hai!*\n"
+                    f"👤 {user_name} (@{user.username or 'N/A'})\n"
+                    f"💬 Message: {text[:200]}"
+                )
+            else:
+                # Normal notification
+                notif = (
+                    f"📩 *Naya Message*\n"
+                    f"👤 {user_name} (@{user.username or 'N/A'})\n"
+                    f"💬 {text[:100]}\n"
+                    f"🤖 Bot reply: {clean_reply[:100]}"
+                )
             await context.bot.send_message(
                 chat_id=OWNER_CHAT_ID,
                 text=notif,
@@ -101,7 +107,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Namaste! 🙏\n\nMain abhi online nahi hoon, lekin aap apna sawaal yahan chhod sakte hain.\nMain jald se jald reply karunga! 😊"
+        "Namaste! 🙏\n\nMain Sourav ka personal assistant bot hoon!\n"
+        "Sourav abhi online nahi hain, lekin main hoon na 😊\n"
+        "Kuch bhi puchho — serious, funny, ya kuch bhi!"
     )
 
 
@@ -115,4 +123,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-            
+    
